@@ -1,16 +1,39 @@
-#include "primtest.h"
+#include <stdio.h>
+#include <string.h>
+#include "primality.h"
+
+#define USAGE \
+"Utilisation: ./isprime [TEST] [N] [K]\n" \
+"Tester la primalité d'un grand nombre.\n\n" \
+"  [N]     le nombre à vérifier\n" \
+"  [K]     le nombre maximum d'itérations > 0\n" \
+"  [TEST]  choisir parmi:\n" \
+"            -f  Utiliser le test de primalité de Fermat\n" \
+"            -m  Utiliser le test de primalité de Miller-Rabin\n"
 
 int	main(int ac, char **av)
 {
-	(void)ac;
-	(void)av;
-	mpz_t r, a, h, n;
-	mpz_inits(r, a, h, n, NULL);
-	mpz_add_ui(a, a, 2);
-	mpz_add_ui(h, h, 26);
-	mpz_add_ui(n, n, 10000000000);
-	square_and_multiply(r, a, h, n);
-	gmp_printf("r = %Zd\n", r);
-	mpz_clears(r, a, h, n, NULL);
+	if (ac != 4)
+		return !!printf(USAGE);
+	mpz_t n;
+	unsigned long k;
+	bool use_fermat, is_prime = false;
+
+	// Parsing des arguments
+	mpz_inits(n, NULL);
+	use_fermat = !strcmp(av[1], "-f");
+	if ((!use_fermat && strcmp(av[1], "-m"))
+	|| gmp_sscanf(av[2], "%Zd", n) != 1
+	|| sscanf(av[3], "%lu", &k) != 1
+	|| k < 1)
+		return !!printf(USAGE);
+
+	// Tests de primalité (si > 1)
+	if (mpz_cmp_ui(n, 1) > 0)
+		is_prime = use_fermat ? fermat(n, k) : miller_rabin(n, k);
+	mpz_clears(n, NULL);
+
+	// Résultat
+	printf("%s\n", (is_prime ? "true" : "false"));
 	return (0);
 }
