@@ -8,7 +8,7 @@
 "Utilisation: ./isprime algorithm n k\n" \
 "Tester la primalité d'un grand nombre.\n\n" \
 "  algorithm  l'algorithme à utiliser (fermat ou miller-rabin)\n" \
-"  n          le nombre à tester\n" \
+"  n          l'entier à tester\n" \
 "  k          le nombre maximum d'itérations > 0\n"
 
 int	main(int ac, char **av)

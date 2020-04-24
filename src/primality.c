@@ -2,12 +2,12 @@
 
 void square_and_multiply(mpz_t r, const mpz_t a, const mpz_t h, const mpz_t n)
 {
-	mp_bitcnt_t i = mpz_sizeinbase(h, 2) - 1;
+	mp_bitcnt_t i = mpz_sizeinbase(h, 2) - 1; // la longueur du nombre en base 2
 	mpz_add_ui(r, a, 0); // r = a
 	while (i)
 	{
 		mpz_mul(r, r, r); // r = r²
-		if (mpz_tstbit(h, --i)) // hi = 1
+		if (mpz_tstbit(h, --i)) // h[i] == 1 ?
 			mpz_mul(r, r, a); // r = r * a
 		mpz_mod(r, r, n); // r = r mod n
 	}
@@ -47,7 +47,7 @@ bool miller_rabin(const mpz_t n, unsigned long k, gmp_randstate_t state)
 	mpz_set_ui(s, s0); // s = s0 (conversion en mpz_t)
 	mpz_set_ui(a, 2); // a = 2
 	square_and_multiply(y, a, s, n); // y = 2^s mod n
-	mpz_divexact(t, n1, y); // t = (n - 1) / y
+	mpz_divexact(t, n1, y); // par déduction, t = (n - 1) / y
 
 	// Test de primalité
 	while (k)
