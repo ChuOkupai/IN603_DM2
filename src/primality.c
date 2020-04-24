@@ -1,9 +1,5 @@
 #include "primality.h"
 
-/*
-** Effectue l'opération r = a^h mod n
-** Note: h doit être strictement positif
-*/
 void square_and_multiply(mpz_t r, const mpz_t a, const mpz_t h, const mpz_t n)
 {
 	mp_bitcnt_t i = mpz_sizeinbase(h, 2) - 1;
@@ -17,44 +13,64 @@ void square_and_multiply(mpz_t r, const mpz_t a, const mpz_t h, const mpz_t n)
 	}
 }
 
-/*
-** Effectue le test de primalité de Fermat.
-** Renvoie vrai si n premier, faux si composé.
-** Note: n doit être supérieur à 1 et k supérieur à 0
-*/
-bool fermat(const mpz_t n, unsigned long k)
+bool fermat(const mpz_t n, unsigned long k, gmp_randstate_t state)
 {
-	gmp_randstate_t state;
-	mpz_t a, n1, r;
-	bool prime = true;
+	mpz_t n1, a, r;
 
-	gmp_randinit_mt(state); // seed
-	mpz_inits(a, n1, r, NULL);
+	mpz_inits(n1, a, r, NULL);
 	mpz_sub_ui(n1, n, 1); // n1 = n - 1
-	while (k--)
+
+	// Test de primalité
+	while (k)
 	{
 		mpz_urandomm(a, state, n1); // rand % n - 1
 		mpz_add_ui(a, a, 1); // ++a (car a > 0)
-		square_and_multiply(r, a, n1, n);
+		square_and_multiply(r, a, n1, n); // r = a^(n - 1) mod n
 		if (mpz_cmp_ui(r, 1)) // r != 1 ?
-		{
-			prime = false; // n est composé
-			break ;
-		}
+			break ; // n est composé
+		--k;
 	}
-	gmp_randclear(state);
-	mpz_clears(a, n1, r, NULL);
-	return (prime);
+	mpz_clears(n1, a, r, NULL);
+	return (!k);
 }
 
-/*
-** Effectue le test de primalité de Miller-Rabin.
-** Renvoie vrai si n premier, faux si composé.
-** Note: n doit être supérieur à 1 et k supérieur à 0
-*/
-bool miller_rabin(const mpz_t n, unsigned long k)
+bool miller_rabin(const mpz_t n, unsigned long k, gmp_randstate_t state)
 {
-	(void)n;
-	(void)k;
-	return (false);
+	mp_bitcnt_t s0, j;
+	mpz_t n1, s, t, y, a;
+
+	mpz_inits(n1, s, t, y, a, NULL);
+	mpz_sub_ui(n1, n, 1); // n1 = n - 1
+
+	// Décomposition sous la forme n - 1 = 2^s * t
+	s0 = mpz_scan1(n1, 0); // s0 = position du premier 1 dans n - 1 en base 2
+	mpz_set_ui(s, s0); // s = s0 (conversion en mpz_t)
+	mpz_set_ui(a, 2); // a = 2
+	square_and_multiply(y, a, s, n); // y = 2^s mod n
+	mpz_divexact(t, n1, y); // t = (n - 1) / y
+
+	// Test de primalité
+	while (k)
+	{
+		mpz_urandomm(a, state, n1); // rand % n - 1
+		mpz_add_ui(a, a, 1); // ++a (car a > 0)
+		square_and_multiply(y, a, t, n); // y = a^t mod n
+		if (mpz_cmp_ui(y, 1) && mpz_cmp(y, n1)) // y != 1 && y != n1 ?
+		{
+			for (j = 0; j < s0; ++j)
+			{
+				mpz_mul(y, y, y); // y = y²
+				mpz_mod(y, y, n); // y = y mod n
+				if (!mpz_cmp_ui(y, 1)) // y == 1 mod n ?
+					j = s0;
+				else if (!mpz_cmp(y, n1)) // y == -1 mod n ?
+					break ;
+			}
+			if (j >= s0)
+				break ; // n est composé
+		}
+		--k;
+	}
+	mpz_clears(n1, s, t, y, a, NULL);
+	return (!k);
 }
